@@ -142,7 +142,8 @@ function parse_prefix(swbuf)
   local prefixlength = swbuf:next_u8()
   if  swbuf:bytes_left() < math.ceil(prefixlength/8)  then
   	return nil
-  elseif prefixlength <= 32 then 
+  elseif prefixlength <= 24 then 
+  	  -- consider as v4
 	  local ip4num=swbuf:next_uN_le( math.ceil(prefixlength/8)) or 0 
 	  return string.format("%d.%d.%d.%d/%d", 
 			bit.band(bit.rshift(ip4num,0),0xff),
@@ -151,6 +152,7 @@ function parse_prefix(swbuf)
 			bit.rshift(ip4num,24), 
 			prefixlength)
   elseif prefixlength <= 128 then
+  	  -- consider as v6
 	 local farr = swbuf:next_str_to_len( math.ceil( prefixlength/8))
 	 local barr = farr..string.rep("\x00",16-math.ceil(prefixlength/8))
 	 return IP6.bin_to_ip6( barr).."/"..prefixlength 

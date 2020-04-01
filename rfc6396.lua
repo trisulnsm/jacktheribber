@@ -47,7 +47,7 @@ local H  =  {
 		end,
 
 		-- IPv4 UNICAST RIB ENTRY 
-		[2] = function(payload )
+		[2] = function(payload, peer_filter_fn  )
 
 			local sw=SWP.new(payload);
 
@@ -67,6 +67,10 @@ local H  =  {
 				}
 
 				rib_entry.peer_ip = g_peer_index[ rib_entry.peer_index + 1 ]
+				if not peer_filter_fn(rib_entry.peer_ip.peer_ip) then
+					sw:skip(sw:next_u16())
+					goto nextrib
+				end 	
 
 				-- path attributes
 				flds = rib_entry.attributes 
@@ -97,6 +101,9 @@ local H  =  {
 				end 
 
 				table.insert(ret.rib_table, rib_entry )
+
+
+				::nextrib::
 			end
 			return ret
 		end,

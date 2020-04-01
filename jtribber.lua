@@ -9,7 +9,7 @@ local Tbl=require'inspect'
 
 -- callback_fn = function( fields_table ) 
 --
-function parse_rib( rib_file, callback_fn) 
+function parse_rib( rib_file, callback_fn, peer_filter_fn) 
 
 	g_peer_index  = {} 
 	local f,_err = io.open(rib_file)
@@ -18,6 +18,11 @@ function parse_rib( rib_file, callback_fn)
 		return
 	end 
 
+	if peer_filter_fn == nil then
+		peer_filter_fn = function()
+			return true
+		end 
+	end 
 
 	-- loop and yield 
 	while true do
@@ -31,14 +36,18 @@ function parse_rib( rib_file, callback_fn)
 		-- the MRT record 
 		hpayload = f:read( header_fields.length)
 		handler = Rfc6396[header_fields.type][header_fields.subtype]
-		local mrt_fields = handler(hpayload)
+		local mrt_fields = handler(hpayload,peer_filter_fn)
 
 		-- the peer index 
 		if header_fields.type == 13 and header_fields.subtype == 1 then
 			g_peer_index=mrt_fields.peer_table 
 		end 	
 
-		callback_fn(mrt_fields)
+		if mrt_fields then 
+			if not callback_fn(mrt_fields) then 
+				break 
+			end 
+		end
 	end 
 
 	f:close()
