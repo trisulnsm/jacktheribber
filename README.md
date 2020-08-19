@@ -14,6 +14,23 @@ TABLE_DUMP_V2 MRT Type.
 bq. JTR uses the excellent LUA protocol parser library from Trisul called [BITMAUL](https://github.com/trisulnsm/bitmaul). 
 
 
+## AS analytics 
+
+The tool `jtr_as_analytics.lua` prints the following details for a given ASN and BGP peer 
+
+To run 
+```
+rv@LAT1:~/jacktheribber$ luajit jtr_as_analysis.lua  rib.20200401.0000 208.115.136.133  58888
+```
+
+where _208.115.136.133_ is a Peer IP and _58888_ is the AS , use jtr_peerindex.lua to print all the peer in the MRT dump. 
+
+The following details are printed 
+
+1. IPv4 prefixes 
+2. Upstream peer AS
+3. Downstream peer AS 
+
 ## Library  API 
 
 This repository consists of a library `jtripper.lua` and several sample tools `jtr_xyz.lua` 
@@ -76,7 +93,7 @@ JT-ribber performance processing full BGP table from abour 75 peers
 ### full dumps 
 
 ````
-vivek@LAT1:~/bldart/jacktheribber$ time luajit jtr_simple.lua rib.20200331.0600   > /tmp/kk
+rv@LAT1:~/bldart/jacktheribber$ time luajit jtr_simple.lua rib.20200331.0600   > /tmp/kk
 
 real    2m23.539s
 user    2m21.726s
@@ -87,7 +104,7 @@ sys     0m1.619s
 compared to bgpdump over the same.
 
 ````
-vivek@LAT1:~/bldart/jacktheribber$ time bgpdump -m rib.20200331.0600   > /tmp/kk
+rv@LAT1:~/bldart/jacktheribber$ time bgpdump -m rib.20200331.0600   > /tmp/kk
 2020-03-31 23:19:11 [info] logging to syslog
 
 real    3m58.573s
