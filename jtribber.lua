@@ -39,7 +39,7 @@ function parse_rib( rib_file, callback_fn, peer_filter_fn)
 		local mrt_fields = handler(hpayload,peer_filter_fn)
 
 		-- the peer index 
-		if header_fields.type == 13 and header_fields.subtype == 1 then
+		if mrt_fields and header_fields.type == 13 and header_fields.subtype == 1 then
 			g_peer_index=mrt_fields.peer_table 
 		end 	
 
@@ -48,6 +48,7 @@ function parse_rib( rib_file, callback_fn, peer_filter_fn)
 				break 
 			end 
 		end
+
 	end 
 
 	f:close()

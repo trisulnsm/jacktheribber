@@ -3,7 +3,6 @@
 local h=require 'handlers' 
 local IP6=require'ip6'
 local SWP=require'sweepbuf'
-local Tbl=require'inspect'
 
 local H  =  {
 
@@ -60,6 +59,7 @@ local H  =  {
 
 
 			for i=1,ret.entry_count  do 
+
 				local rib_entry  = {
 					peer_index  = sw:next_u16(),
 					originated_time   = sw:next_u32(),
@@ -67,6 +67,11 @@ local H  =  {
 				}
 
 				rib_entry.peer_ip = g_peer_index[ rib_entry.peer_index + 1 ]
+				if not rib_entry.peer_ip  then 
+					-- peer_index not found 
+					sw:skip(sw:next_u16())
+					goto nextrib
+				end
 				if not peer_filter_fn(rib_entry.peer_ip.peer_ip) then
 					sw:skip(sw:next_u16())
 					goto nextrib

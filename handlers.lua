@@ -4,6 +4,7 @@
 
 -- local dbg=require'debugger'
 local IP6=require'ip6'
+local Tbl=require'inspect'
 
 BGP_Path_Attributes = 
 {
@@ -77,25 +78,36 @@ BGP_Path_Attributes =
   end,
 
   [14] = function(swbuf,len)
+
+  	swbuf:push_fence(len) 
+
   	-- MP NLRI 
     local flds = {}
     flds.afi = swbuf:next_u16()
     flds.safi = swbuf:next_u8()
 	local nlen=swbuf:next_u8()
-	if flds.afi==2 and flds.safi==1 and nlen==16 then
-		flds.nexthop = IP6.bin_to_ip6( swbuf:next_str_to_len(nlen))
+	if flds.afi==2 and flds.safi==1 then
+		flds.nexthop = {}
+		for i =1, nlen/16 do 
+			table.insert(flds.nexthop, IP6.bin_to_ip6( swbuf:next_str_to_len(16)))
+		end 
 	else
 		swbuf:skip(nlen)
 	end
 	swbuf:skip(1) -- reserved
 
-    local prefixlength = swbuf:next_u8()
+	flds.nlri = {}
 	if flds.afi==2 and flds.safi==1 then 
-		local farr = swbuf:next_str_to_len( math.ceil( prefixlength/8))
-		local barr = farr..string.rep("\x00",16-math.ceil(prefixlength/8))
-		flds.nlri = IP6.bin_to_ip6( barr).."/"..prefixlength
+		while swbuf:has_more() do 
+			local prefixlength = swbuf:next_u8()
+			local farr = swbuf:next_str_to_len( math.ceil( prefixlength/8))
+			local barr = farr..string.rep("\x00",16-math.ceil(prefixlength/8))
+			table.insert(flds.nlri, IP6.bin_to_ip6( barr).."/"..prefixlength)
+		end 
 
 	end
+
+	swbuf:pop_fence();
 
     -- MP-NLRI 
     return "MP-NLRI", flds
@@ -117,7 +129,6 @@ BGP_Path_Attributes =
 		end 
 	end 
 
-    -- MP-NLRI 
     return "EXTENDED-COMMUNITES", ec 
 
   end,
@@ -130,7 +141,6 @@ BGP_Path_Attributes =
 		table.insert( ec, swbuf:next_u32()..":"..swbuf:next_u32()..":"..swbuf:next_u32()) 
 	end 
 
-    -- MP-NLRI 
     return "LARGE-COMMUNITES", ec
 
   end,
