@@ -154,12 +154,13 @@ function parse_prefix(swbuf)
   	return nil
   elseif prefixlength <= 24 then 
   	  -- consider as v4
-	  local ip4num=swbuf:next_uN_le( math.ceil(prefixlength/8)) or 0 
+	  local ip4num=swbuf:next_uN( math.ceil(prefixlength/8)) or 0 
+	  ip4num=bit.lshift(ip4num, 8*(4 - math.ceil(prefixlength/8))) 
 	  return string.format("%d.%d.%d.%d/%d", 
-			bit.band(bit.rshift(ip4num,0),0xff),
-			bit.band(bit.rshift(ip4num,8),0xff), 
-			bit.band(bit.rshift(ip4num,16),0xff), 
 			bit.rshift(ip4num,24), 
+			bit.band(bit.rshift(ip4num,16),0xff), 
+			bit.band(bit.rshift(ip4num,8),0xff), 
+			bit.band(bit.rshift(ip4num,0),0xff),
 			prefixlength)
   elseif prefixlength <= 128 then
   	  -- consider as v6

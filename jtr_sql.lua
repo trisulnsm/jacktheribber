@@ -3,6 +3,9 @@
 -- Stores routes from a specific V4 or v6 BGP peer 
 -- into a SQLITE3 database 
 -- 
+-- sample command line 
+-- luajit jtr_simple.lua  ribdump.000  238.1.23.22 17287  routes.sqdb 
+-- 
 require 'jtribber'
 local lsqlite3 = require 'lsqlite3'
 
@@ -23,13 +26,13 @@ end
 
 --------------------
 -- usage test_file <filename> <peer_ip> 
-if #arg ~= 3 then 
- print("Usage : jtr_sql <dumpfile> <only-this-peer-ip> <sqldb> ")
+if #arg ~= 4 then 
+ print("Usage : jtr_sql <dumpfile> <only-this-peer-ip> <only-this-as> <sqldb> ")
  return
 end 
 
 
-local dbfile = arg[3]
+local dbfile = arg[4]
 
 local db,status=lsqlite3.open(dbfile);
 if not db then
@@ -46,6 +49,7 @@ local insert_6=db:prepare("INSERT OR REPLACE INTO PREFIX_PATHS_V6 VALUES(?,?,?,?
 -- Print each RIB Entry , Pipe Separated
 -- 
 local fnclosure  = function()
+	local target_as = tonumber(arg[3])
 	local insert_4=insert_4
 	local insert_6=insert_6
 	return function(mrt_record)
@@ -56,17 +60,31 @@ local fnclosure  = function()
 			for idx,entry in ipairs(mrt_record.rib_table) do 
 				local tbl={}
 
-				use_insert:bind(1,prefix)
+				local aspath_arr = entry.attributes.path_attr["AS_PATH"].aslist
+				local found_pos=0
+				for i,v in ipairs(aspath_arr) do
+					if v==target_as then
+						found_pos=i
+						break
+					end
+				end 
 				
-				local aspath_str=table.concat(entry.attributes.path_attr["AS_PATH"].aslist,' ')
-				use_insert:bind(2,aspath_str)
-				use_insert:bind(3,entry.attributes.path_attr["COMMUNITIES"])
-				use_insert:bind(4,entry.attributes.path_attr["NEXTHOP"])
-				use_insert:bind(5,entry.originated_time)
+				if found_pos > 0  then 
 
-				use_insert:step()
-				use_insert:clear_bindings()
-				use_insert:reset()
+					local clip_aspath={}
+					for i = found_pos+1, #aspath_arr do 
+						table.insert(clip_aspath,aspath_arr[i])
+					end
+					use_insert:bind(1,prefix)
+					use_insert:bind(2,table.concat(clip_aspath,' '))
+					use_insert:bind(3,entry.attributes.path_attr["COMMUNITIES"])
+					use_insert:bind(4,entry.attributes.path_attr["NEXTHOP"])
+					use_insert:bind(5,entry.originated_time)
+
+					use_insert:step()
+					use_insert:clear_bindings()
+					use_insert:reset()
+				end 
 				
 			end 
 		end

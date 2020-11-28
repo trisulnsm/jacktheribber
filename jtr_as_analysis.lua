@@ -12,7 +12,7 @@ local Tbl=require'inspect'
 
 -- usage test_file <filename> <peer_ip> <asn>
 if #arg ~= 3  then 
-  print("Usage : jtr_as_analysis   <dumpfile>  <only-this-peer-ip> <asn> ")
+  print("Usage : jtr_as_analysis   <dumpfile>  <only-this-peer-ip> <asn>|<file-with-aslist> ")
   return
 end 
 
@@ -29,6 +29,7 @@ end
 as_analysis  = {
 	upstream_as = {},
 	downstream_as = {},
+	downstream_origin_as = {},
 	v4_prefixes = {},
 	v6_prefixes = {},
 }
@@ -37,7 +38,21 @@ as_analysis  = {
 -- 
 local fnclosure  = function()
 
-	local target_as = tonumber(arg[3])
+	local target_as = {}
+
+	local f= io.open(arg[3],"r") 
+	if f==nil then
+		print("Setting up analysis for ASN:"..arg[3])
+		target_as[tonumber(arg[3])]=true
+	else 
+		print("Setting up analysis ASN from file :"..arg[3])
+		for line in f:lines() do 
+			print("Adding ASN ".. line)
+			target_as[tonumber(line)]=true
+		end
+		f:close()
+	end
+	
 
 	return function(mrt_record)
 		if mrt_record.prefix then 
@@ -48,7 +63,7 @@ local fnclosure  = function()
 				local aspath=entry.attributes.path_attr["AS_PATH"].aslist
 
 				for i,v in ipairs(aspath) do
-					if i> 1 and v==target_as then
+					if i> 1 and target_as[v] then
 						if i==#aspath then
 							as_analysis.upstream_as[aspath[i-1]]=true	
 							if prefix:find(':',1,true) then 
@@ -59,6 +74,7 @@ local fnclosure  = function()
 						else 
 							as_analysis.upstream_as[aspath[i-1]]=true	
 							as_analysis.downstream_as[aspath[i+1]]=true	
+							as_analysis.downstream_origin_as[aspath[#aspath]]=true	
 						end 
 					end 
 				end
@@ -73,5 +89,4 @@ end
 parse_rib( arg[1],fnclosure(),peer_filter_closure());
 
 -- output  
-
 print(Tbl.inspect(as_analysis))

@@ -83,6 +83,7 @@ The following files are in this repository
   -	jtr_as_analysis.lua - Perform AS analytics, show all routes, IPv4 , IPv6 prefixes for a ASN, one peer only
   - jtr_as_analysis_allpeers.lua  - AS analytics for all peers found in the MRT RIB dump 
   - jtr_sql.lua - Dump all routes from a peer into a SQLITE3 DB 
+  - jtr_peerroutes.lua - How many routes are present per peer 
 
 
 ## Performance compared to bgpdump 
