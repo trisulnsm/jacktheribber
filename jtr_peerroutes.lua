@@ -33,8 +33,6 @@ end
 -- 
 local fnclosure  = function()
 	return function(mrt_record)
-		local prefix=mrt_record.prefix
-		print(prefix) 
 		return true
 	end
 end
